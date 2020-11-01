@@ -260,7 +260,7 @@ function! s:readReference(ref)
 		let l:cursor = [get(a:ref, 'line', 2), get(a:ref, 'column', 1)]
 		call cursor(l:cursor)
 	else
-		let @/ = "['(]" . a:ref['Node']
+		let @/ = "^\\s*['(]\\V" . escape(a:ref['Node'], '\/')
 		execute "silent! normal /\<CR>"
 	endif
 
