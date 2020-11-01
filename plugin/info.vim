@@ -94,10 +94,10 @@ augroup InfoFiletype
 		\ GotoNode call <SID>gotoNode(<q-args>)
 
 	" Look up the reference under the cursor (for cross-references and menus)
-	autocmd FileType info if &buftype =~? 'nofile' | 
-			\nnoremap <silent> <buffer> K :call <SID>xRefUnderCursor()<CR> | 
-			\nnoremap <silent> <buffer> <2-LeftMouse> :call <SID>xRefUnderCursor()<CR> | 
-			\nnoremap <silent> <buffer> <C-]> :call <SID>xRefUnderCursor()<CR> | 
+	autocmd FileType info if &buftype =~? 'nofile' |
+			\nnoremap <silent> <buffer> K :call <SID>xRefUnderCursor()<CR> |
+			\nnoremap <silent> <buffer> <2-LeftMouse> :call <SID>xRefUnderCursor()<CR> |
+			\nnoremap <silent> <buffer> <C-]> :call <SID>xRefUnderCursor()<CR> |
 		\endif
 
 	" Opening a file with Info URI
@@ -136,6 +136,7 @@ function! s:info(mods, ...)
 
 	let l:file = ''
 	let l:node = ''
+	let l:type = ''
 
 	if a:0 > 0
 		let l:file = a:1
@@ -143,6 +144,11 @@ function! s:info(mods, ...)
 
 	if a:0 > 1
 		let l:node = a:2
+		let l:type = 'Node'
+	endif
+
+	if a:0 > 2
+		let l:type = a:3
 	endif
 
 	let l:reference = {}
@@ -151,6 +157,9 @@ function! s:info(mods, ...)
 	endif
 	if !empty(l:node)
 		let l:reference['Node'] = l:node
+	endif
+	if !empty(l:type)
+		let l:reference['Type'] = l:type
 	endif
 
 	if !s:verifyReference(l:reference)
@@ -247,8 +256,13 @@ function! s:readReference(ref)
 	endif
 
 	" Jump to the given position or second line so header concealing can work
-	let l:cursor = [get(a:ref, 'line', 2), get(a:ref, 'column', 1)]
-	call cursor(l:cursor)
+	if !has_key(a:ref, 'Type') || a:ref['Type'] == 'Node'
+		let l:cursor = [get(a:ref, 'line', 2), get(a:ref, 'column', 1)]
+		call cursor(l:cursor)
+	else
+		let @/ = "['(]" . a:ref['Node']
+		execute "silent! normal /\<CR>"
+	endif
 
 	" Assemble the menu and cross-references
 	call s:buildMenu()
@@ -555,7 +569,7 @@ endfunction
 function! s:populateLocList(title, items)
 	function! ReferenceToEntry(index, reference)
 		return {
-			\ 'filename': info#uri#encode(a:reference), 
+			\ 'filename': info#uri#encode(a:reference),
 			\ 'lnum': get(a:reference, 'line', 1),
 			\ 'text': a:reference.Name,
 		\ }
@@ -573,7 +587,11 @@ function! s:encodeCommand(ref, kwargs)
 		let l:cmd .= ' --file '.shellescape(a:ref['File'])
 	endif
 	if has_key(a:ref, 'Node')
-		let l:cmd .= ' --node '.shellescape(a:ref['Node'])
+		if !has_key(a:ref, 'Type') || a:ref['Type'] == 'Node'
+		  let l:cmd .= ' --node '.shellescape(a:ref['Node'])
+                else
+		  let l:cmd .= ' '.shellescape(a:ref['Node'])
+                endif
 	endif
 	" The path to the 'doc' directory has been added so we can find the
 	" documents included with the plugin. Output is directed stdout

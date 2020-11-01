@@ -78,6 +78,11 @@ function! info#uri#decode(uri)
 		endif
 	endfor
 
+	let l:val = matchstr(l:query, '\vType\=\zs(Item|Node)')
+	if !empty(l:val)
+		let l:ref['Type'] = l:val
+	endif
+
 	return l:ref
 endfunction
 
@@ -88,11 +93,12 @@ function! info#uri#encode(reference)
 	let l:uri = 'info:' . s:percentEncode(get(a:reference, 'File', 'dir'))
 
 	" Build up the query dictionary
-	let l:query_props = ['line', 'column']  " Hard-coded URI properties
+	let l:query_props = ['line', 'column', 'Type']  " Hard-coded URI properties
 	let l:query  = {}
 	for l:prop in l:query_props
-		if get(a:reference, l:prop, 0)
-			let l:query[l:prop] = get(a:reference, l:prop)
+		let l:prop_value = get(a:reference, l:prop, '')
+		if !empty(l:prop_value)
+			let l:query[l:prop] = l:prop_value
 		endif
 	endfor
 	" Insert the query into the URI
