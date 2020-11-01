@@ -260,7 +260,7 @@ function! s:readReference(ref)
 		let l:cursor = [get(a:ref, 'line', 2), get(a:ref, 'column', 1)]
 		call cursor(l:cursor)
 	else
-		let @/ = "^\\s*['(]\\V" . escape(a:ref['Node'], '\/')
+		let @/ = "['(`‘]\\V" . escape(a:ref['Node'], '\/')
 		execute "silent! normal /\<CR>"
 	endif
 
@@ -583,16 +583,6 @@ endfunction
 " redirection of stdin and stderr
 function! s:encodeCommand(ref, kwargs)
 	let l:cmd = info#prog()
-	if has_key(a:ref, 'File')
-		let l:cmd .= ' --file '.shellescape(a:ref['File'])
-	endif
-	if has_key(a:ref, 'Node')
-		if !has_key(a:ref, 'Type') || a:ref['Type'] == 'Node'
-		  let l:cmd .= ' --node '.shellescape(a:ref['Node'])
-                else
-		  let l:cmd .= ' '.shellescape(a:ref['Node'])
-                endif
-	endif
 	" The path to the 'doc' directory has been added so we can find the
 	" documents included with the plugin. Output is directed stdout
 	let l:cmd .= ' -d '.s:doc_path.' --output -'
@@ -607,6 +597,17 @@ function! s:encodeCommand(ref, kwargs)
 
 	if has_key(a:kwargs, 'stdout')
 		let l:cmd .= ' >'.a:kwargs['stdout']
+	endif
+
+	if has_key(a:ref, 'File')
+		let l:cmd .= ' --file '.shellescape(a:ref['File'])
+	endif
+	if has_key(a:ref, 'Node')
+		if !has_key(a:ref, 'Type') || a:ref['Type'] == 'Node'
+		  let l:cmd .= ' --node '.shellescape(a:ref['Node'])
+                else
+		  let l:cmd .= ' -- '.shellescape(a:ref['Node'])
+                endif
 	endif
 
 	return l:cmd
