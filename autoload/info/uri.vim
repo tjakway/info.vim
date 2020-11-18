@@ -83,6 +83,12 @@ function! info#uri#decode(uri)
 		let l:ref['Type'] = l:val
 	endif
 
+	"let l:val = matchstr(l:query, '\vSearch\=\zs[a-zA-Z0-9_%$#?[\]\(\){};-]+')
+	"if !empty(l:val)
+	"	let l:ref['Search'] = substitute(l:val, '\V0x23;', '#', 'g')
+	"	let l:ref['Search'] = substitute(l:ref['Search'], '\V0x24;', '$', 'g')
+	"endif
+
 	return l:ref
 endfunction
 
@@ -98,6 +104,8 @@ function! info#uri#encode(reference)
 	for l:prop in l:query_props
 		let l:prop_value = get(a:reference, l:prop, '')
 		if !empty(l:prop_value)
+			let l:prop_value = substitute(l:prop_value, '\V$', '0x24;', 'g')
+			let l:prop_value = substitute(l:prop_value, '\V#', '0x23;', 'g')
 			let l:query[l:prop] = l:prop_value
 		endif
 	endfor

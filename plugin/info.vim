@@ -77,6 +77,7 @@ nnoremap <silent> <Plug>(InfoPrev)    :InfoPrev<CR>
 nnoremap <silent> <Plug>(InfoMenu)    :<C-U>call <SID>menuPrompt(v:count)<CR>
 nnoremap <silent> <Plug>(InfoFollow)  :<C-U>call <SID>followPrompt(v:count)<CR>
 nnoremap <silent> <Plug>(InfoGoto)    :call <SID>gotoPrompt()<CR>
+nnoremap <silent> <Plug>(InfoFollowRefUnderCursor) :call <SID>xRefUnderCursor()<CR>
 
 augroup InfoFiletype
 	autocmd!
@@ -161,7 +162,6 @@ function! s:info(mods, ...)
 	if !empty(l:type)
 		let l:reference['Type'] = l:type
 	endif
-
 	if !s:verifyReference(l:reference)
 		if exists('g:Infofallback')
 			call g:Infofallback(l:file, a:mods)
@@ -175,7 +175,7 @@ function! s:info(mods, ...)
 	if a:mods !~# 'tab' && s:find_info_window()
 		execute 'silent edit' info#uri#exescape(l:uri)
 	else
-		execute 'silent' a:mods 'split' info#uri#exescape(l:uri)
+		execute 'silent! vertical' a:mods 'split' info#uri#exescape(l:uri)
 	endif
 
 	echo 'Welcome to Info. Type g? for help.'
@@ -256,13 +256,8 @@ function! s:readReference(ref)
 	endif
 
 	" Jump to the given position or second line so header concealing can work
-	if !has_key(a:ref, 'Type') || a:ref['Type'] == 'Node'
-		let l:cursor = [get(a:ref, 'line', 2), get(a:ref, 'column', 1)]
-		call cursor(l:cursor)
-	else
-		let @/ = "['(`‘]\\V" . escape(a:ref['Node'], '\/')
-		execute "silent! normal /\<CR>"
-	endif
+	let l:cursor = [get(a:ref, 'line', 2), get(a:ref, 'column', 1)]
+	call cursor(l:cursor)
 
 	" Assemble the menu and cross-references
 	call s:buildMenu()
@@ -478,7 +473,6 @@ function! s:xRefUnderCursor()
 	" succeeding line at the same time.
 	"
 	" Note: We assume that a reference will never span more than two lines.
-
 	let l:line  = getline(line('.') - 1) . ' '
 	let l:line .= getline('.'          ) . ' '
 	let l:line .= getline(line('.') + 1)
@@ -498,6 +492,8 @@ function! s:xRefUnderCursor()
 
 		if l:col < l:end
 			let l:xRefString = matchstr(l:line, l:referencePattern)
+                        " refs that spawn multiple lines contain more than one space next to each other, clean up
+			let l:xRefString = substitute(l:xRefString, '\s\+', ' ', 'g')
 			let l:xRef = info#reference#decode(l:xRefString, b:info)
 			execute 'silent' 'edit' info#uri#exescape(info#uri#encode(l:xRef))
 			return
