@@ -175,7 +175,12 @@ function! s:info(mods, ...)
 	if a:mods !~# 'tab' && s:find_info_window()
 		execute 'silent edit' info#uri#exescape(l:uri)
 	else
-		execute 'silent! vertical' a:mods 'split' info#uri#exescape(l:uri)
+		" change to
+		"	execute 'silent! vertical' a:mods 'split' info#uri#exescape(l:uri)
+		" for vertical
+		" ideally this would be a function parameter but 
+		" vimscript is too arcane for me to try that with confidence
+		execute 'silent' a:mods 'split' info#uri#exescape(l:uri)
 	endif
 
 	echo 'Welcome to Info. Type g? for help.'
